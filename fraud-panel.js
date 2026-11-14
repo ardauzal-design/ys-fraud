@@ -282,12 +282,12 @@
                     var style = window.getComputedStyle(curr);
                     var bg = style.backgroundColor;
 
-                    if (curr.getAttribute("aria-selected") === "true" || cls.includes("active") || cls.includes("selected")) {
+                    if (curr.getAttribute("aria-selected") === "true" || cls.includes("active") || cls.includes("selected") || cls.includes("dark") || cls.includes("black")) {
                         return true;
                     }
                     if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
                         var rgb = bg.match(/\d+/g);
-                        if (rgb && parseInt(rgb[0]) < 120 && parseInt(rgb[1]) < 120 && parseInt(rgb[2]) < 120) {
+                        if (rgb && parseInt(rgb[0]) < 130 && parseInt(rgb[1]) < 130 && parseInt(rgb[2]) < 130) {
                             return true;
                         }
                     }
@@ -295,6 +295,22 @@
                 }
             }
         }
+
+        var pageText = document.body.innerText || "";
+        var digerSekmeAktifMi = false;
+        ["İade için beklemede", "Onay bekleyen", "Tümü"].forEach(function(sekmeAdi) {
+            allEls.forEach(function(el) {
+                if (el.children.length === 0 && (el.textContent || "").trim() === sekmeAdi) {
+                    var p = el.parentElement;
+                    if (p && window.getComputedStyle(p).backgroundColor === "rgb(0, 0, 0)") digerSekmeAktifMi = true;
+                }
+            });
+        });
+
+        if (!digerSekmeAktifMi && pageText.includes("KALAN ZAMAN") && (pageText.includes("Atanmamış") || pageText.includes("Başladı") || pageText.includes("Beklemede"))) {
+            return true;
+        }
+
         return false;
     }
 
