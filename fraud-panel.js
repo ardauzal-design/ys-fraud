@@ -5,10 +5,12 @@
     }
 
     // ==========================================
-    // YÖNETİCİ (ADMIN) ŞİFRESİ VE BULUT AYARLARI
+    // YÖNETİCİ (ADMIN) ŞİFRESİ, FORM VE BULUT AYARLARI
     // ==========================================
     var ADMIN_SIFRE = "1453";
+    var FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdpY8CIHk4aNL6TxRPR3qFCOpNJh02HWvw4Rz2CmWyaYvLTXw/viewform";
     var FIREBASE_URL = "https://balcova-pano-default-rtdb.europe-west1.firebasedatabase.app";
+    var sonIslemZamani = 0;
 
     // Oturumu ve sayfayı canlı tutma
     if (window.location.href.indexOf("yemeksepeti.com") !== -1) {
@@ -39,7 +41,7 @@
         var style = document.createElement("style");
         style.id = "ys-f-style";
         style.innerHTML = `
-            #ys-fraud-panel { position: fixed !important; bottom: 20px !important; right: 20px !important; width: 365px !important; background: rgba(255, 255, 255, 0.97) !important; backdrop-filter: blur(12px) !important; border: 1px solid rgba(226, 232, 240, 0.9) !important; border-radius: 18px !important; box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.04) !important; z-index: 2147483647 !important; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; display: block !important; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important; overflow: hidden !important; }
+            #ys-fraud-panel { position: fixed !important; bottom: 20px !important; right: 20px !important; width: 365px !important; background: rgba(255, 255, 255, 0.98) !important; backdrop-filter: blur(12px) !important; border: 1px solid rgba(226, 232, 240, 0.95) !important; border-radius: 18px !important; box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.04) !important; z-index: 2147483647 !important; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; display: block !important; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important; overflow: hidden !important; }
             #ys-fraud-panel.minimized { width: 265px !important; border-radius: 999px !important; }
             #ys-fraud-panel.minimized #ys-f-body { display: none !important; }
             
@@ -72,7 +74,7 @@
             .ys-f-scope-btn { background: #f1f5f9 !important; border: 1px solid #e2e8f0 !important; color: #475569 !important; padding: 6px 9px !important; border-radius: 9px !important; font-size: 9px !important; font-weight: 800 !important; cursor: pointer !important; white-space: nowrap !important; transition: 0.15s !important; }
             .ys-f-scope-btn.active { background: #0f172a !important; color: #ffffff !important; border-color: #0f172a !important; }
             
-            #ys-f-list { max-height: 130px !important; overflow-y: auto !important; background: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-radius: 12px !important; padding: 6px !important; }
+            #ys-f-list { max-height: 120px !important; overflow-y: auto !important; background: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-radius: 12px !important; padding: 6px !important; }
             .ys-f-item { padding: 7px 10px !important; margin-bottom: 5px !important; background: #ffffff !important; border-radius: 9px !important; border: 1px solid #f1f5f9 !important; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important; display: flex !important; justify-content: space-between !important; align-items: center !important; }
             .ys-f-item:last-child { margin-bottom: 0 !important; }
             .ys-f-item-info { display: flex !important; flex-direction: column !important; gap: 2px !important; }
@@ -97,12 +99,14 @@
             .ys-f-danger-btn { background: #fef2f2 !important; border: 1px solid #fecaca !important; color: #dc2626 !important; padding: 6px 10px !important; border-radius: 9px !important; font-size: 10px !important; font-weight: 700 !important; cursor: pointer !important; transition: 0.15s !important; }
             .ys-f-danger-btn:hover { background: #fee2e2 !important; }
             
+            .ys-f-form-btn { display: flex !important; align-items: center !important; justify-content: center !important; gap: 6px !important; width: 100% !important; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important; color: #ffffff !important; border: none !important; padding: 8px 12px !important; border-radius: 10px !important; font-size: 11px !important; font-weight: 700 !important; cursor: pointer !important; text-decoration: none !important; margin-top: 6px !important; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.22) !important; transition: 0.15s !important; box-sizing: border-box !important; }
+            .ys-f-form-btn:hover { background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important; transform: translateY(-1px) !important; }
+
             .ys-f-counter-pill { background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%) !important; color: #be123c !important; border: 1px solid #fecdd3 !important; padding: 7px 12px !important; border-radius: 10px !important; font-size: 11px !important; font-weight: 800 !important; text-align: center !important; margin-top: 6px !important; }
         `;
         (document.head || document.documentElement).appendChild(style);
     }
 
-    // YÜKSEK SESLİ TÜRKÇE KONUŞMA UYARISI
     function sesliUyariKonus() {
         try {
             if (!('speechSynthesis' in window)) return;
@@ -186,7 +190,6 @@
         } catch(e) {}
     }
 
-    // VERİ NORMALİZASYONU (ESKİ DÜZ METİN KAYITLARI DA MAĞAZA OBJESİNE ÇEVİRİR)
     function normalizeKayitlar(rawArr) {
         if (!Array.isArray(rawArr)) return [];
         return rawArr.map(function(item) {
@@ -205,7 +208,6 @@
         return localStorage.getItem("YS_USER_DEPO") || magazalar[0];
     }
 
-    // TÜM MAĞAZALARIN ORTAK BULUT LİSTESİ (TARAMA İÇİN)
     function getListe() {
         try {
             var s = localStorage.getItem("YS_PORTAL_FRAUD_LIST");
@@ -218,6 +220,7 @@
 
     function setListe(l) {
         try {
+            sonIslemZamani = Date.now();
             var temizListe = normalizeKayitlar(l);
             localStorage.setItem("YS_PORTAL_FRAUD_LIST", JSON.stringify(temizListe));
             bulutaGonder(temizListe);
@@ -241,7 +244,6 @@
         });
     }
 
-    // MAĞAZA LİSTESİ BULUT İŞLEMLERİ
     function getMagazalar() {
         try {
             var s = localStorage.getItem("YS_PORTAL_MAGAZALAR");
@@ -255,6 +257,7 @@
 
     function setMagazalar(mList) {
         try {
+            sonIslemZamani = Date.now();
             localStorage.setItem("YS_PORTAL_MAGAZALAR", JSON.stringify(mList));
             fetch(FIREBASE_URL + "/ys_magaza_listesi.json", {
                 method: "PUT",
@@ -276,9 +279,12 @@
     }
 
     function buluttanCek() {
+        if (Date.now() - sonIslemZamani < 7000) return;
+
         fetch(FIREBASE_URL + "/ys_fraud_listesi.json?t=" + Date.now())
             .then(function(res) { return res.json(); })
             .then(function(data) {
+                if (Date.now() - sonIslemZamani < 7000) return;
                 var dot = document.getElementById("ys-f-cloud-dot");
                 if (dot) dot.style.background = "#10b981";
                 var cloudList = normalizeKayitlar(data);
@@ -310,8 +316,8 @@
         return str ? str.replace(/İ/g, "i").replace(/I/g, "ı").replace(/Ğ/g, "g").replace(/ğ/g, "g").replace(/Ü/g, "u").replace(/ü/g, "u").replace(/Ş/g, "s").replace(/ş/g, "s").replace(/Ö/g, "o").replace(/ö/g, "o").replace(/Ç/g, "c").replace(/ç/g, "c").toLowerCase().trim() : "";
     }
 
-    // LİSTE GÖRÜNÜM KAPSAMI ('store': Sadece aktif mağaza, 'all': Tüm mağazalar)
     var listeGorunumKapsami = "store";
+    var tespitEdilenler = new Set();
 
     function renderListe(filterText) {
         try {
@@ -325,7 +331,6 @@
                 return norm(item.store) === norm(aktifMagaza);
             });
 
-            // Üst rozette aktif mağaza sayısı / toplam bulut havuzu sayısı görünür
             badge.innerText = magazaKayitlari.length + " / " + fullList.length + " Kişi";
             box.innerHTML = "";
 
@@ -357,20 +362,20 @@
                         <span class='ys-f-item-name'>${itemObj.name}</span>
                         <span class='ys-f-store-tag ${isOwnStore ? "own" : ""}'>📍 ${itemObj.store}</span>
                     </div>
-                    <span class='ys-f-del' title='Admin Şifresi ile Sil'>🔒 ✕</span>
+                    <span class='ys-f-del' title='Admin Şifresi ile Tüm Havuzdan Sil'>🔒 ✕</span>
                 `;
                 item.querySelector(".ys-f-del").onclick = function() {
                     if (!adminDogrula()) return;
+                    var silinecekNorm = norm(itemObj.name);
                     var current = getListe();
-                    var idx = current.findIndex(function(x) {
-                        return norm(x.name) === norm(itemObj.name) && norm(x.store) === norm(itemObj.store);
+                    // Bu ismin tüm mağazalardaki tüm eşleşen kayıtlarını tamamen sil
+                    var guncelListe = current.filter(function(x) {
+                        var kayitNorm = norm(x.name);
+                        return kayitNorm !== silinecekNorm && kayitNorm.indexOf(silinecekNorm) === -1 && silinecekNorm.indexOf(kayitNorm) === -1;
                     });
-                    if (idx !== -1) {
-                        current.splice(idx, 1);
-                        setListe(current);
-                        renderListe(filterText);
-                        toastGoster("🗑️ Admin onayı ile silindi: " + itemObj.name);
-                    }
+                    setListe(guncelListe);
+                    renderListe(filterText);
+                    toastGoster("🗑️ Admin onayı ile tamamen silindi: " + itemObj.name);
                 };
                 box.appendChild(item);
             });
@@ -546,6 +551,7 @@
                             <input type="text" id="ys-f-new-store-inp" placeholder="Örn: Bornova (İzmir)">
                             <button id="ys-f-new-store-save" style="background:#0f172a !important;">Kaydet</button>
                         </div>
+                        <a href="${FORM_URL}" target="_blank" rel="noopener noreferrer" class="ys-f-form-btn">📋 Fraud Formu Doldur</a>
                         <div class="ys-f-counter-pill" id="ys-f-count-lbl">Bugün Yakalanan: 0 Adet</div>
                     </div>
                 </div>`;
@@ -561,7 +567,6 @@
                 this.innerText = min ? "▲" : "—";
             };
 
-            // Liste Kapsam Geçişi (Bu Mağaza / Tümü)
             document.getElementById("ys-f-scope-store").onclick = function() {
                 listeGorunumKapsami = "store";
                 this.classList.add("active");
@@ -641,6 +646,7 @@
                 if (!adminDogrula()) return;
                 if (confirm("⚠️ Tüm mağazaların ortak bulut havuzu silinecek. Emin misiniz?")) {
                     setListe([]);
+                    tespitEdilenler.clear();
                     renderListe();
                     toastGoster("🗑️ Admin onayı ile bulut listesi temizlendi");
                 }
@@ -663,7 +669,6 @@
                 reader.readAsText(file);
             };
 
-            // Mağaza değiştiğinde listeyi yeni seçilen mağazaya özel filtrele
             document.getElementById("ys-f-depo-select").onchange = function() {
                 localStorage.setItem("YS_USER_DEPO", this.value);
                 renderListe(document.getElementById("ys-f-search-inp").value);
@@ -677,8 +682,6 @@
     }
 
     setInterval(buluttanCek, 5000);
-
-    var tespitEdilenler = new Set();
 
     setInterval(function() {
         initFraudSystem();
@@ -701,7 +704,6 @@
 
             if (!aktifMi) return;
 
-            // ÇAPRAZ MAĞAZA TAKİBİ: TÜM MAĞAZALARIN BİRLEŞİK BULUT LİSTESİNİ TARAR
             var TUM_BULUT_LISTESI = getListe();
             var musteriColIdx = getMusteriSutunIndeksi();
             var rows = document.querySelectorAll('tbody tr, div[role="row"]');
@@ -754,11 +756,13 @@
                     return isimNorm.length > 2 && musteriNorm.indexOf(isimNorm) !== -1;
                 });
 
+                var mevcutRozet = musteriCell.querySelector(".ys-f-alert-badge");
+
                 if (eslesenKayit) {
                     rowEl.style.setProperty("background-color", "#ffe4e6", "important");
                     rowEl.style.setProperty("border-left", "4px solid #ea002a", "important");
 
-                    if (!musteriCell.querySelector(".ys-f-alert-badge")) {
+                    if (!mevcutRozet) {
                         var badge = document.createElement("span");
                         badge.className = "ys-f-alert-badge";
                         badge.innerText = "🚨 FRAUD (" + eslesenKayit.store + ")";
@@ -772,6 +776,14 @@
                         acilDurumAlarmiCal();
                         toastGoster("🚨 DİKKAT! Fraud Müşteri (" + rawName + " - Kayıt: " + eslesenKayit.store + ")");
                     }
+                } else {
+                    // Müşteri listeden silindiyse satır rengini ve rozetini anında temizle
+                    if (mevcutRozet) {
+                        mevcutRozet.remove();
+                        rowEl.style.removeProperty("background-color");
+                        rowEl.style.removeProperty("border-left");
+                    }
+                    tespitEdilenler.delete(orderKey);
                 }
             });
         } catch(e) {}
