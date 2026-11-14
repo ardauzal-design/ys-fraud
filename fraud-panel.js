@@ -7,7 +7,7 @@
     // AKTİF FIREBASE REALTIME DATABASE ADRESİNİZ (balcova-pano)
     var FIREBASE_URL = "https://balcova-pano-default-rtdb.europe-west1.firebasedatabase.app";
 
-    // Sayfayı ve oturumu canlı tutma (Sadece gerçek Yemeksepeti portalında aktif olur)
+    // Sayfayı ve oturumu canlı tutma
     if (window.location.href.indexOf("yemeksepeti.com") !== -1) {
         setTimeout(function() { window.location.reload(); }, 5 * 60 * 1000);
         setInterval(function() {
@@ -271,23 +271,33 @@
         if (el) el.innerText = "Bugün Yakalanan: " + bugunSayac + " Adet";
     }
 
+    // GELİŞTİRİLMİŞ SEKME KONTROLÜ (ÜST KATMANLARIN SİYAH ARKA PLANINI VE YAZI RENGİNİ KONTROL EDER)
     function devamEdiyorAktifMi() {
-        var adaylar = document.querySelectorAll('button, div[role="tab"], a, span, div');
-        for (var i = 0; i < adaylar.length; i++) {
-            var el = adaylar[i];
-            if (el.children.length > 1) continue;
-            var txt = (el.innerText || el.textContent || "").trim();
-            if (txt === "Devam ediyor") {
-                var target = el.closest('button') || el.closest('[role="tab"]') || el.parentElement || el;
-                var style = window.getComputedStyle(target);
-                var bg = style.backgroundColor;
-                var ariaSel = target.getAttribute("aria-selected");
-                if (ariaSel === "true") return true;
-                if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
-                    var rgb = bg.match(/\d+/g);
-                    if (rgb && parseInt(rgb[0]) < 80 && parseInt(rgb[1]) < 80 && parseInt(rgb[2]) < 80) {
-                        return true;
+        var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+        var node;
+        while (node = walker.nextNode()) {
+            if ((node.nodeValue || "").trim() === "Devam ediyor") {
+                var curr = node.parentElement;
+                for (var k = 0; k < 5 && curr; k++) {
+                    var style = window.getComputedStyle(curr);
+                    var bg = style.backgroundColor;
+                    var color = style.color;
+                    if (curr.getAttribute("aria-selected") === "true") return true;
+                    // Koyu/Siyah arka plan kontrolü
+                    if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
+                        var rgb = bg.match(/\d+/g);
+                        if (rgb && parseInt(rgb[0]) < 90 && parseInt(rgb[1]) < 90 && parseInt(rgb[2]) < 90) {
+                            return true;
+                        }
                     }
+                    // Beyaz yazı rengi kontrolü (Sadece aktif sekme beyaz yazılıdır)
+                    if (color) {
+                        var cRgb = color.match(/\d+/g);
+                        if (cRgb && parseInt(cRgb[0]) > 235 && parseInt(cRgb[1]) > 235 && parseInt(cRgb[2]) > 235) {
+                            return true;
+                        }
+                    }
+                    curr = curr.parentElement;
                 }
             }
         }
