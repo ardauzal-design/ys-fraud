@@ -271,29 +271,23 @@
         if (el) el.innerText = "Bugün Yakalanan: " + bugunSayac + " Adet";
     }
 
-    // GELİŞTİRİLMİŞ SEKME KONTROLÜ (ÜST KATMANLARIN SİYAH ARKA PLANINI VE YAZI RENGİNİ KONTROL EDER)
     function devamEdiyorAktifMi() {
-        var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
-        var node;
-        while (node = walker.nextNode()) {
-            if ((node.nodeValue || "").trim() === "Devam ediyor") {
-                var curr = node.parentElement;
-                for (var k = 0; k < 5 && curr; k++) {
+        var allEls = document.querySelectorAll('button, [role="tab"], a, div, span');
+        for (var i = 0; i < allEls.length; i++) {
+            var el = allEls[i];
+            if (el.children.length === 0 && (el.textContent || "").trim() === "Devam ediyor") {
+                var curr = el;
+                for (var k = 0; k < 6 && curr && curr !== document.body; k++) {
+                    var cls = (curr.className && typeof curr.className === "string") ? curr.className.toLowerCase() : "";
                     var style = window.getComputedStyle(curr);
                     var bg = style.backgroundColor;
-                    var color = style.color;
-                    if (curr.getAttribute("aria-selected") === "true") return true;
-                    // Koyu/Siyah arka plan kontrolü
+
+                    if (curr.getAttribute("aria-selected") === "true" || cls.includes("active") || cls.includes("selected")) {
+                        return true;
+                    }
                     if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
                         var rgb = bg.match(/\d+/g);
-                        if (rgb && parseInt(rgb[0]) < 90 && parseInt(rgb[1]) < 90 && parseInt(rgb[2]) < 90) {
-                            return true;
-                        }
-                    }
-                    // Beyaz yazı rengi kontrolü (Sadece aktif sekme beyaz yazılıdır)
-                    if (color) {
-                        var cRgb = color.match(/\d+/g);
-                        if (cRgb && parseInt(cRgb[0]) > 235 && parseInt(cRgb[1]) > 235 && parseInt(cRgb[2]) > 235) {
+                        if (rgb && parseInt(rgb[0]) < 120 && parseInt(rgb[1]) < 120 && parseInt(rgb[2]) < 120) {
                             return true;
                         }
                     }
