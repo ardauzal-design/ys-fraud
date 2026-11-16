@@ -11,16 +11,7 @@
     var FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdpY8CIHk4aNL6TxRPR3qFCOpNJh02HWvw4Rz2CmWyaYvLTXw/viewform";
     var FIREBASE_URL = "https://balcova-pano-default-rtdb.europe-west1.firebasedatabase.app";
     var sonIslemZamani = 0;
-
-    // SAYFAYI YENİLEMEDEN OTURUMU VE TABLOYU CANLI TUTMA (Panelin kaybolmasını engeller)
-    if (window.location.href.indexOf("yemeksepeti.com") !== -1) {
-        setInterval(function() {
-            try {
-                window.dispatchEvent(new Event('mousemove'));
-                document.dispatchEvent(new Event('visibilitychange'));
-            } catch(e) {}
-        }, 25 * 1000);
-    }
+    var ilkBulutSenkronuTamam = false;
 
     var VARSAYILAN_MAGAZALAR = [
         "Balçova (İzmir)",
@@ -184,7 +175,7 @@
             if (!toast) {
                 toast = document.createElement("div");
                 toast.id = "ys-copy-toast";
-                document.body.appendChild(toast);
+                document.documentElement.appendChild(toast);
             }
             toast.innerText = mesaj;
             toast.style.display = "block";
@@ -220,10 +211,13 @@
         return [];
     }
 
-    function setListe(l) {
+    function setListe(l, izinliBosYazma) {
         try {
-            sonIslemZamani = Date.now();
             var temizListe = normalizeKayitlar(l);
+            if (!ilkBulutSenkronuTamam && temizListe.length === 0) return;
+            if (temizListe.length === 0 && !izinliBosYazma) return;
+
+            sonIslemZamani = Date.now();
             localStorage.setItem("YS_PORTAL_FRAUD_LIST", JSON.stringify(temizListe));
             bulutaGonder(temizListe);
         } catch(e) {}
@@ -289,7 +283,14 @@
                 if (Date.now() - sonIslemZamani < 7000) return;
                 var dot = document.getElementById("ys-f-cloud-dot");
                 if (dot) dot.style.background = "#10b981";
+
+                if (data === null && getListe().length > 0) {
+                    ilkBulutSenkronuTamam = true;
+                    return;
+                }
+
                 var cloudList = normalizeKayitlar(data);
+                ilkBulutSenkronuTamam = true;
                 var localList = getListe();
                 if (JSON.stringify(cloudList) !== JSON.stringify(localList)) {
                     localStorage.setItem("YS_PORTAL_FRAUD_LIST", JSON.stringify(cloudList));
@@ -374,7 +375,7 @@
                         var kayitNorm = norm(x.name);
                         return kayitNorm !== silinecekNorm && kayitNorm.indexOf(silinecekNorm) === -1 && silinecekNorm.indexOf(kayitNorm) === -1;
                     });
-                    setListe(guncelListe);
+                    setListe(guncelListe, true);
                     renderListe(filterText);
                     toastGoster("🗑️ Admin onayı ile tamamen silindi: " + itemObj.name);
                 };
@@ -417,7 +418,7 @@
             var el = allEls[i];
             if (el.children.length === 0 && (el.textContent || "").trim() === "Devam ediyor") {
                 var curr = el;
-                for (var k = 0; k < 6 && curr && curr !== document.body; k++) {
+                for (var k = 0; k < 6 && curr && curr !== document.documentElement; k++) {
                     var cls = (curr.className && typeof curr.className === "string") ? curr.className.toLowerCase() : "";
                     var style = window.getComputedStyle(curr);
                     var bg = style.backgroundColor;
@@ -436,7 +437,7 @@
             }
         }
 
-        var pageText = document.body.innerText || "";
+        var pageText = document.documentElement.innerText || "";
         var digerSekmeAktifMi = false;
         ["İade için beklemede", "Onay bekleyen", "Tümü"].forEach(function(sekmeAdi) {
             allEls.forEach(function(el) {
@@ -472,6 +473,7 @@
             return norm(x.name) === norm(musteriAdi) && norm(x.store) === norm(aktifMagaza);
         });
         if (!zatenBuMagazadaVar) {
+            ilkBulutSenkronuTamam = true;
             list.unshift({ name: musteriAdi, store: aktifMagaza });
             setListe(list);
             renderListe();
@@ -484,7 +486,8 @@
     function initFraudSystem() {
         try {
             injectStyles();
-            var targetBody = document.body || document.documentElement;
+            // Paneli Yemeksepeti kodlarından korumak için body yerine en üst kök etikete (html) gömüyoruz
+            var targetBody = document.documentElement;
             if (!targetBody || document.getElementById("ys-fraud-panel")) return;
 
             var magazalar = getMagazalar();
@@ -646,7 +649,7 @@
             document.getElementById("ys-f-clear-btn").onclick = function() {
                 if (!adminDogrula()) return;
                 if (confirm("⚠️ Tüm mağazaların ortak bulut havuzu silinecek. Emin misiniz?")) {
-                    setListe([]);
+                    setListe([], true);
                     tespitEdilenler.clear();
                     renderListe();
                     toastGoster("🗑️ Admin onayı ile bulut listesi temizlendi");
@@ -660,10 +663,13 @@
                 reader.onload = function(evt) {
                     try {
                         var importedList = JSON.parse(evt.target.result);
-                        if (Array.isArray(importedList)) {
-                            setListe(importedList);
+                        if (Array.isArray(importedList) && importedList.length > 0) {
+                            ilkBulutSenkronuTamam = true;
+                            var mevcut = getListe();
+                            var birlesik = normalizeKayitlar(importedList).concat(mevcut);
+                            setListe(birlesik);
                             renderListe();
-                            toastGoster("☁️ Liste buluta aktarıldı!");
+                            toastGoster("☁️ Yedek mevcut listeyle birleştirilip buluta aktarıldı!");
                         }
                     } catch(err) { alert("❌ Geçersiz JSON dosyası!"); }
                 };
@@ -678,24 +684,25 @@
 
             renderListe();
             sayacGuncelle();
-            buluttanCek();
         } catch(e) {}
     }
 
-    // GÖZCÜ (MUTATION OBSERVER): YEMEKSEPETİ PANELİ SİLMEYE ÇALIŞIRSA ANINDA GERİ YÜKLER
-    var observer = new MutationObserver(function() {
-        if (!document.getElementById("ys-fraud-panel") && document.body) {
+    // AĞRESİF ZİNCİRLEME DÖNGÜ (Yemeksepeti tarayıcı zamanlayıcılarını silse bile geri gelir)
+    function korumaDongusu() {
+        if (!document.getElementById("ys-fraud-panel")) {
             initFraudSystem();
         }
-    });
-    if (document.documentElement) {
-        observer.observe(document.documentElement, { childList: true, subtree: true });
+        setTimeout(korumaDongusu, 1000);
     }
+    korumaDongusu();
 
-    setInterval(buluttanCek, 5000);
+    function bulutDongusu() {
+        buluttanCek();
+        setTimeout(bulutDongusu, 5000);
+    }
+    bulutDongusu();
 
-    setInterval(function() {
-        initFraudSystem();
+    function taramaDongusu() {
         try {
             var aktifMi = devamEdiyorAktifMi();
             var statusEl = document.getElementById("ys-f-tab-status");
@@ -713,7 +720,10 @@
                 }
             }
 
-            if (!aktifMi) return;
+            if (!aktifMi) {
+                setTimeout(taramaDongusu, 1000);
+                return;
+            }
 
             var TUM_BULUT_LISTESI = getListe();
             var musteriColIdx = getMusteriSutunIndeksi();
@@ -797,5 +807,7 @@
                 }
             });
         } catch(e) {}
-    }, 1000);
+        setTimeout(taramaDongusu, 1000);
+    }
+    taramaDongusu();
 })();
