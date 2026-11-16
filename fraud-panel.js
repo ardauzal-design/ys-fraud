@@ -12,12 +12,14 @@
     var FIREBASE_URL = "https://balcova-pano-default-rtdb.europe-west1.firebasedatabase.app";
     var sonIslemZamani = 0;
 
-    // Oturumu ve sayfayı canlı tutma
+    // SAYFAYI YENİLEMEDEN OTURUMU VE TABLOYU CANLI TUTMA (Panelin kaybolmasını engeller)
     if (window.location.href.indexOf("yemeksepeti.com") !== -1) {
-        setTimeout(function() { window.location.reload(); }, 5 * 60 * 1000);
         setInterval(function() {
-            try { window.dispatchEvent(new Event('mousemove')); } catch(e) {}
-        }, 30 * 1000);
+            try {
+                window.dispatchEvent(new Event('mousemove'));
+                document.dispatchEvent(new Event('visibilitychange'));
+            } catch(e) {}
+        }, 25 * 1000);
     }
 
     var VARSAYILAN_MAGAZALAR = [
@@ -41,7 +43,7 @@
         var style = document.createElement("style");
         style.id = "ys-f-style";
         style.innerHTML = `
-            #ys-fraud-panel { position: fixed !important; bottom: 20px !important; right: 20px !important; width: 365px !important; background: rgba(255, 255, 255, 0.98) !important; backdrop-filter: blur(12px) !important; border: 1px solid rgba(226, 232, 240, 0.95) !important; border-radius: 18px !important; box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.04) !important; z-index: 2147483647 !important; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; display: block !important; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important; overflow: hidden !important; }
+            #ys-fraud-panel { position: fixed !important; bottom: 20px !important; right: 20px !important; width: 365px !important; background: rgba(255, 255, 255, 0.98) !important; backdrop-filter: blur(12px) !important; border: 1px solid rgba(226, 232, 240, 0.95) !important; border-radius: 18px !important; box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.04) !important; z-index: 2147483647 !important; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; display: block !important; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important; overflow: hidden !important; visibility: visible !important; opacity: 1 !important; }
             #ys-fraud-panel.minimized { width: 265px !important; border-radius: 999px !important; }
             #ys-fraud-panel.minimized #ys-f-body { display: none !important; }
             
@@ -368,7 +370,6 @@
                     if (!adminDogrula()) return;
                     var silinecekNorm = norm(itemObj.name);
                     var current = getListe();
-                    // Bu ismin tüm mağazalardaki tüm eşleşen kayıtlarını tamamen sil
                     var guncelListe = current.filter(function(x) {
                         var kayitNorm = norm(x.name);
                         return kayitNorm !== silinecekNorm && kayitNorm.indexOf(silinecekNorm) === -1 && silinecekNorm.indexOf(kayitNorm) === -1;
@@ -681,6 +682,16 @@
         } catch(e) {}
     }
 
+    // GÖZCÜ (MUTATION OBSERVER): YEMEKSEPETİ PANELİ SİLMEYE ÇALIŞIRSA ANINDA GERİ YÜKLER
+    var observer = new MutationObserver(function() {
+        if (!document.getElementById("ys-fraud-panel") && document.body) {
+            initFraudSystem();
+        }
+    });
+    if (document.documentElement) {
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+    }
+
     setInterval(buluttanCek, 5000);
 
     setInterval(function() {
@@ -777,7 +788,6 @@
                         toastGoster("🚨 DİKKAT! Fraud Müşteri (" + rawName + " - Kayıt: " + eslesenKayit.store + ")");
                     }
                 } else {
-                    // Müşteri listeden silindiyse satır rengini ve rozetini anında temizle
                     if (mevcutRozet) {
                         mevcutRozet.remove();
                         rowEl.style.removeProperty("background-color");
